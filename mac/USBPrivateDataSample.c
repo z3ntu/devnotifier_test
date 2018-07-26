@@ -194,6 +194,16 @@ void DeviceAdded(void *refCon, io_iterator_t iterator)
 
         privateDataRef->locationID = locationID;
 
+
+        UInt16 pid, vid;
+        kr = (*privateDataRef->deviceInterface)->GetDeviceVendor(privateDataRef->deviceInterface, &vid);
+        assert(kr == kIOReturnSuccess);
+        printf("vid: 0x%04x\n", vid);
+
+        kr = (*privateDataRef->deviceInterface)->GetDeviceProduct(privateDataRef->deviceInterface, &pid);
+        assert(kr == kIOReturnSuccess);
+        printf("pid: 0x%04x\n", pid);
+
         // Register for an interest notification of this device being removed. Use a reference to our
         // private data as the refCon which will be passed to the notification callback.
         kr = IOServiceAddInterestNotification(gNotifyPort,						// notifyPort
@@ -235,7 +245,6 @@ int main(int argc, const char *argv[])
 {
     CFMutableDictionaryRef 	matchingDict;
     CFRunLoopSourceRef		runLoopSource;
-    CFNumberRef				numberRef;
     kern_return_t			kr;
     sig_t					oldHandler;
 
