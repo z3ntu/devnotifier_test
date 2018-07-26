@@ -1,12 +1,12 @@
 /*
     File:			USBPrivateDataSample.c
-	
+
     Description:	This sample demonstrates how to use IOKitLib and IOUSBLib to set up asynchronous
 					callbacks when a USB device is attached to or removed from the system.
 					It also shows how to associate arbitrary data with each device instance.
-                
+
     Copyright:		© Copyright 2001-2006 Apple Computer, Inc. All rights reserved.
-	
+
     Disclaimer:		IMPORTANT:  This Apple software is supplied to you by Apple Computer, Inc.
 					("Apple") in consideration of your agreement to the following terms, and your
 					use, installation, modification or redistribution of this Apple software
@@ -41,16 +41,16 @@
 					OF THE APPLE SOFTWARE, HOWEVER CAUSED AND WHETHER UNDER THEORY OF CONTRACT, TORT
 					(INCLUDING NEGLIGENCE), STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN
 					ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-			
+
 	Change History (most recent first):
-        
+
             1.2	 	10/04/2006			Updated to produce a universal binary. Now requires Xcode 2.2.1 or
 										later to build. Modernized and incorporated bug fixes.
 
 			1.1		04/24/2002			Added comments, release of interface object, use of USB location ID
-            
+
 			1.0	 	10/30/2001			New sample.
-        
+
 */
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -84,24 +84,24 @@ void DeviceNotification(void *refCon, io_service_t service, natural_t messageTyp
 {
     kern_return_t	kr;
     MyPrivateData	*privateDataRef = (MyPrivateData *) refCon;
-    
+
     if (messageType == kIOMessageServiceIsTerminated) {
         fprintf(stderr, "Device removed.\n");
-    
+
         // Dump our private data to stderr just to see what it looks like.
         fprintf(stderr, "privateDataRef->deviceName: ");
-		CFShow(privateDataRef->deviceName);
-		fprintf(stderr, "privateDataRef->locationID: 0x%lx.\n\n", privateDataRef->locationID);
-    
+        CFShow(privateDataRef->deviceName);
+        fprintf(stderr, "privateDataRef->locationID: 0x%lx.\n\n", privateDataRef->locationID);
+
         // Free the data we're no longer using now that the device is going away
         CFRelease(privateDataRef->deviceName);
-        
+
         if (privateDataRef->deviceInterface) {
             kr = (*privateDataRef->deviceInterface)->Release(privateDataRef->deviceInterface);
         }
-        
+
         kr = IOObjectRelease(privateDataRef->notification);
-        
+
         free(privateDataRef);
     }
 }
@@ -127,38 +127,38 @@ void DeviceAdded(void *refCon, io_iterator_t iterator)
     IOCFPlugInInterface	**plugInInterface = NULL;
     SInt32				score;
     HRESULT 			res;
-    
+
     while ((usbDevice = IOIteratorNext(iterator))) {
         io_name_t		deviceName;
-        CFStringRef		deviceNameAsCFString;	
+        CFStringRef		deviceNameAsCFString;
         MyPrivateData	*privateDataRef = NULL;
         UInt32			locationID;
-        
+
         printf("Device added.\n");
-        
+
         // Add some app-specific information about this device.
         // Create a buffer to hold the data.
         privateDataRef = malloc(sizeof(MyPrivateData));
         bzero(privateDataRef, sizeof(MyPrivateData));
-        
+
         // Get the USB device's name.
         kr = IORegistryEntryGetName(usbDevice, deviceName);
-		if (KERN_SUCCESS != kr) {
+        if (KERN_SUCCESS != kr) {
             deviceName[0] = '\0';
         }
-        
-        deviceNameAsCFString = CFStringCreateWithCString(kCFAllocatorDefault, deviceName, 
-                                                         kCFStringEncodingASCII);
-        
+
+        deviceNameAsCFString = CFStringCreateWithCString(kCFAllocatorDefault, deviceName,
+                               kCFStringEncodingASCII);
+
         // Dump our data to stderr just to see what it looks like.
         fprintf(stderr, "deviceName: ");
         CFShow(deviceNameAsCFString);
-        
-        // Save the device's name to our private data.        
+
+        // Save the device's name to our private data.
         privateDataRef->deviceName = deviceNameAsCFString;
-                                                
-        // Now, get the locationID of this device. In order to do this, we need to create an IOUSBDeviceInterface 
-        // for our device. This will create the necessary connections between our userland application and the 
+
+        // Now, get the locationID of this device. In order to do this, we need to create an IOUSBDeviceInterface
+        // for our device. This will create the necessary connections between our userland application and the
         // kernel object for the USB Device.
         kr = IOCreatePlugInInterfaceForService(usbDevice, kIOUSBDeviceUserClientTypeID, kIOCFPlugInInterfaceID,
                                                &plugInInterface, &score);
@@ -170,11 +170,11 @@ void DeviceAdded(void *refCon, io_iterator_t iterator)
 
         // Use the plugin interface to retrieve the device interface.
         res = (*plugInInterface)->QueryInterface(plugInInterface, CFUUIDGetUUIDBytes(kIOUSBDeviceInterfaceID),
-                                                 (LPVOID*) &privateDataRef->deviceInterface);
-        
+                (LPVOID*) &privateDataRef->deviceInterface);
+
         // Now done with the plugin interface.
         (*plugInInterface)->Release(plugInInterface);
-        			
+
         if (res || privateDataRef->deviceInterface == NULL) {
             fprintf(stderr, "QueryInterface returned %d.\n", (int) res);
             continue;
@@ -183,32 +183,31 @@ void DeviceAdded(void *refCon, io_iterator_t iterator)
         // Now that we have the IOUSBDeviceInterface, we can call the routines in IOUSBLib.h.
         // In this case, fetch the locationID. The locationID uniquely identifies the device
         // and will remain the same, even across reboots, so long as the bus topology doesn't change.
-        
+
         kr = (*privateDataRef->deviceInterface)->GetLocationID(privateDataRef->deviceInterface, &locationID);
         if (KERN_SUCCESS != kr) {
             fprintf(stderr, "GetLocationID returned 0x%08x.\n", kr);
             continue;
-        }
-        else {
+        } else {
             fprintf(stderr, "Location ID: 0x%lx\n\n", locationID);
         }
 
         privateDataRef->locationID = locationID;
-        
+
         // Register for an interest notification of this device being removed. Use a reference to our
         // private data as the refCon which will be passed to the notification callback.
         kr = IOServiceAddInterestNotification(gNotifyPort,						// notifyPort
-											  usbDevice,						// service
-											  kIOGeneralInterest,				// interestType
-											  DeviceNotification,				// callback
-											  privateDataRef,					// refCon
-											  &(privateDataRef->notification)	// notification
-											  );
-                                                
+                                              usbDevice,						// service
+                                              kIOGeneralInterest,				// interestType
+                                              DeviceNotification,				// callback
+                                              privateDataRef,					// refCon
+                                              &(privateDataRef->notification)	// notification
+                                             );
+
         if (KERN_SUCCESS != kr) {
             printf("IOServiceAddInterestNotification returned 0x%08x.\n", kr);
         }
-        
+
         // Done with this USB device; release the reference added by IOIteratorNext
         kr = IOObjectRelease(usbDevice);
     }
@@ -225,7 +224,7 @@ void DeviceAdded(void *refCon, io_iterator_t iterator)
 void SignalHandler(int sigraised)
 {
     fprintf(stderr, "\nInterrupted.\n");
-   
+
     exit(0);
 }
 
@@ -245,39 +244,39 @@ int main(int argc, const char *argv[])
     oldHandler = signal(SIGINT, SignalHandler);
     if (oldHandler == SIG_ERR) {
         fprintf(stderr, "Could not establish new signal handler.");
-	}
-        
+    }
+
     // Set up the matching criteria for the devices we're interested in. The matching criteria needs to follow
     // the same rules as kernel drivers: mainly it needs to follow the USB Common Class Specification, pp. 6-7.
-    // See also Technical Q&A QA1076 "Tips on USB driver matching on Mac OS X" 
-	// <http://developer.apple.com/qa/qa2001/qa1076.html>.
-    // One exception is that you can use the matching dictionary "as is", i.e. without adding any matching 
-    // criteria to it and it will match every IOUSBDevice in the system. IOServiceAddMatchingNotification will 
+    // See also Technical Q&A QA1076 "Tips on USB driver matching on Mac OS X"
+    // <http://developer.apple.com/qa/qa2001/qa1076.html>.
+    // One exception is that you can use the matching dictionary "as is", i.e. without adding any matching
+    // criteria to it and it will match every IOUSBDevice in the system. IOServiceAddMatchingNotification will
     // consume this dictionary reference, so there is no need to release it later on.
-    
+
     matchingDict = IOServiceMatching(kIOUSBDeviceClassName);	// Interested in instances of class
-                                                                // IOUSBDevice and its subclasses
+    // IOUSBDevice and its subclasses
     if (matchingDict == NULL) {
         fprintf(stderr, "IOServiceMatching returned NULL.\n");
         return -1;
     }
-    
+
     // We are interested in all USB devices (as opposed to USB interfaces).  The Common Class Specification
     // tells us that we need to specify the idVendor, idProduct, and bcdDevice fields, or, if we're not interested
-    // in particular bcdDevices, just the idVendor and idProduct.  Note that if we were trying to match an 
-    // IOUSBInterface, we would need to set more values in the matching dictionary (e.g. idVendor, idProduct, 
+    // in particular bcdDevices, just the idVendor and idProduct.  Note that if we were trying to match an
+    // IOUSBInterface, we would need to set more values in the matching dictionary (e.g. idVendor, idProduct,
     // bInterfaceNumber and bConfigurationValue.
     /* deleted */
 
     // Create a notification port and add its run loop event source to our run loop
     // This is how async notifications get set up.
-    
+
     gNotifyPort = IONotificationPortCreate(kIOMasterPortDefault);
     runLoopSource = IONotificationPortGetRunLoopSource(gNotifyPort);
-    
+
     gRunLoop = CFRunLoopGetCurrent();
     CFRunLoopAddSource(gRunLoop, runLoopSource, kCFRunLoopDefaultMode);
-    
+
     // Now set up a notification to be called when a device is first matched by I/O Kit.
     kr = IOServiceAddMatchingNotification(gNotifyPort,					// notifyPort
                                           kIOFirstMatchNotification,	// notificationType
@@ -285,15 +284,15 @@ int main(int argc, const char *argv[])
                                           DeviceAdded,					// callback
                                           NULL,							// refCon
                                           &gAddedIter					// notification
-                                          );		
-                                            
-    // Iterate once to get already-present devices and arm the notification    
-    DeviceAdded(NULL, gAddedIter);	
+                                         );
+
+    // Iterate once to get already-present devices and arm the notification
+    DeviceAdded(NULL, gAddedIter);
 
     // Start the run loop. Now we'll receive notifications.
     fprintf(stderr, "Starting run loop.\n\n");
     CFRunLoopRun();
-        
+
     // We should never get here
     fprintf(stderr, "Unexpectedly back from CFRunLoopRun()!\n");
     return 0;
