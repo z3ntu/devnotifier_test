@@ -5,14 +5,18 @@
  */
 #include <libudev.h>
 #include <stdio.h>
+#include <string.h>
 
 #define SUBSYSTEM "usb"
 
 static void print_device(struct udev_device* dev)
 {
     const char* action = udev_device_get_action(dev);
-    if (! action)
-        action = "exists";
+    if (action == NULL) // device exists
+        return;
+
+    if(strcmp(action, "bind") != 0 && strcmp(action, "unbind") != 0) // add or remove action
+        return;
 
     const char* vendor = udev_device_get_sysattr_value(dev, "idVendor");
     if (! vendor)
@@ -22,9 +26,7 @@ static void print_device(struct udev_device* dev)
     if (! product)
         product = "0000";
 
-    printf("%s %s %6s %s:%s %s\n",
-           udev_device_get_subsystem(dev),
-           udev_device_get_devtype(dev),
+    printf("%6s %s:%s %s\n",
            action,
            vendor,
            product,
