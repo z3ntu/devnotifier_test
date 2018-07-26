@@ -60,11 +60,6 @@
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/usb/IOUSBLib.h>
 
-// Change these two constants to match your device's idVendor and idProduct.
-// Or, just pass your idVendor and idProduct as command line arguments when running this sample.
-#define kMyVendorID			1351
-#define kMyProductID		8193
-
 typedef struct MyPrivateData {
     io_object_t				notification;
     IOUSBDeviceInterface	**deviceInterface;
@@ -243,17 +238,7 @@ int main(int argc, const char *argv[])
     CFRunLoopSourceRef		runLoopSource;
     CFNumberRef				numberRef;
     kern_return_t			kr;
-    long					usbVendor = kMyVendorID;
-    long					usbProduct = kMyProductID;
     sig_t					oldHandler;
-    
-    // pick up command line arguments
-    if (argc > 1) {
-        usbVendor = atoi(argv[1]);
-	}
-    if (argc > 2) {
-        usbProduct = atoi(argv[2]);
-	}
 
     // Set up a signal handler so we can clean up when we're interrupted from the command line
     // Otherwise we stay in our run loop forever.
@@ -262,8 +247,6 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "Could not establish new signal handler.");
 	}
         
-    fprintf(stderr, "Looking for devices matching vendor ID=%ld and product ID=%ld.\n", usbVendor, usbProduct);
-
     // Set up the matching criteria for the devices we're interested in. The matching criteria needs to follow
     // the same rules as kernel drivers: mainly it needs to follow the USB Common Class Specification, pp. 6-7.
     // See also Technical Q&A QA1076 "Tips on USB driver matching on Mac OS X" 
@@ -284,21 +267,7 @@ int main(int argc, const char *argv[])
     // in particular bcdDevices, just the idVendor and idProduct.  Note that if we were trying to match an 
     // IOUSBInterface, we would need to set more values in the matching dictionary (e.g. idVendor, idProduct, 
     // bInterfaceNumber and bConfigurationValue.
-    
-    // Create a CFNumber for the idVendor and set the value in the dictionary
-    numberRef = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &usbVendor);
-    CFDictionarySetValue(matchingDict, 
-                         CFSTR(kUSBVendorID), 
-                         numberRef);
-    CFRelease(numberRef);
-    
-    // Create a CFNumber for the idProduct and set the value in the dictionary
-    numberRef = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &usbProduct);
-    CFDictionarySetValue(matchingDict, 
-                         CFSTR(kUSBProductID), 
-                         numberRef);
-    CFRelease(numberRef);
-    numberRef = NULL;
+    /* deleted */
 
     // Create a notification port and add its run loop event source to our run loop
     // This is how async notifications get set up.
