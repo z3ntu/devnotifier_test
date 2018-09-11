@@ -144,8 +144,6 @@ bool DeviceNotifierMac::setup()
     deviceConnectedCallback(NULL, gAddedIter);
     deviceDisconnectedCallback(NULL, gRemovedIter);
 
-    // TODO: Use Qt main loop? Doesn't work...
-    CFRunLoopRun();
     return true;
 }
 

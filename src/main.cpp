@@ -10,6 +10,10 @@
 
 int main(int argc, char *argv[])
 {
+#ifdef Q_OS_DARWIN
+    // Lets Qt use the CF loop, otherwise CFRunLoopRun() would have to be used.
+    setenv("QT_EVENT_DISPATCHER_CORE_FOUNDATION", "1", true);
+#endif
     QCoreApplication app(argc, argv);
 
 #ifdef Q_OS_LINUX
