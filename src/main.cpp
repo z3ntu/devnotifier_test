@@ -23,9 +23,9 @@ private:
 MainClass::MainClass()
 {
 #ifdef Q_OS_LINUX
-    IDeviceNotifier *notifier = new DeviceNotifierLinux();
+    notifier = new DeviceNotifierLinux();
 #elif defined(Q_OS_DARWIN)
-    IDeviceNotifier *notifier = new DeviceNotifierMac();
+    notifier = new DeviceNotifierMac();
 #else
     #error "Missing DeviceNotifier implementation for OS."
 #endif
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 {
 #ifdef Q_OS_DARWIN
     // Lets Qt use the CF loop, otherwise CFRunLoopRun() would have to be used.
-    qputenv("QT_EVENT_DISPATCHER_CORE_FOUNDATION", "1", true);
+    qputenv("QT_EVENT_DISPATCHER_CORE_FOUNDATION", "1");
 #endif
     QCoreApplication app(argc, argv);
 

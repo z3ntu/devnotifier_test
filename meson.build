@@ -18,8 +18,9 @@ else
 endif
 
 moc_headers = ['src/idevicenotifier.h']
+moc_sources = ['src/main.cpp']
 
 qt5 = import('qt5')
-src += qt5.preprocess(moc_headers : moc_headers)
+src += qt5.preprocess(moc_headers : moc_headers, moc_sources : moc_sources)
 
 executable('devnotifier_test', src, dependencies : deps)

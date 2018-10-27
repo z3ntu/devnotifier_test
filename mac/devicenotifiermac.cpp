@@ -79,7 +79,7 @@ void deviceConnectedCallback(void *refCon, io_iterator_t iterator)
         assert(kr == kIOReturnSuccess);
         qDebug() << "vid:" << QString::number(vid, 16).rightJustified(4, '0')  << "pid:" << QString::number(pid, 16).rightJustified(4, '0');
         USBDeviceAddress addr;
-        kr = (*deviceINterface)->GetDeviceAddress(deviceInterface, &addr);
+        kr = (*deviceInterface)->GetDeviceAddress(deviceInterface, &addr);
         qDebug() << "device address:" << addr;
 
 
