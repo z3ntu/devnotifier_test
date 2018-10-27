@@ -5,16 +5,18 @@ deps = [qt5_dep]
 
 src = ['src/main.cpp']
 
-if build_machine.system() == 'linux'
+if host_machine.system() == 'linux'
   libudev = dependency('libudev')
   deps += [libudev]
   #src = ['linux/udev_monitor_usb.c']
   src += ['linux/devicenotifierlinux.cpp']
-else
+elif host_machine.system() == 'darwin'
   iokit = dependency('appleframeworks',
                      modules : ['CoreFoundation', 'IOKit'])
   deps += [iokit]
   src += ['mac/devicenotifiermac.cpp']
+else
+  error('Unsupported target platform.')
 endif
 
 moc_headers = ['src/idevicenotifier.h']
