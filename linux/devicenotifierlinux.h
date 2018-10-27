@@ -21,6 +21,8 @@
 
 #include <libudev.h>
 
+#include <QHash>
+
 #include "../src/idevicenotifier.h"
 
 /**
@@ -31,12 +33,12 @@ class DeviceNotifierLinux : public IDeviceNotifier
 public:
     virtual ~DeviceNotifierLinux() override;
     virtual bool setup() override;
-// signals:
-//     void deviceConnected();
-//     void deviceDisconnected();
+
 private:
     struct udev *udev = NULL;
     struct udev_monitor *mon = NULL;
+
+    QHash<QString, bool> var1;
 
 private slots:
     void udevEvent(int fd);

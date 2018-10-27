@@ -31,7 +31,7 @@ public:
     virtual ~IDeviceNotifier() {}
     virtual bool setup() = 0;
 signals:
-    void deviceAdded();
+    void deviceAdded(/*QString vid, QString pid*/);
     void deviceRemoved();
 };
 

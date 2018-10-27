@@ -78,6 +78,9 @@ void deviceConnectedCallback(void *refCon, io_iterator_t iterator)
         kr = (*deviceInterface)->GetDeviceProduct(deviceInterface, &pid);
         assert(kr == kIOReturnSuccess);
         qDebug() << "vid:" << QString::number(vid, 16).rightJustified(4, '0')  << "pid:" << QString::number(pid, 16).rightJustified(4, '0');
+        USBDeviceAddress addr;
+        kr = (*deviceINterface)->GetDeviceAddress(deviceInterface, &addr);
+        qDebug() << "device address:" << addr;
 
 
         kr = IOObjectRelease(usbDevice);

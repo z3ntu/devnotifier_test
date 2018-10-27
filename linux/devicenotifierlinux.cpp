@@ -61,6 +61,15 @@ void DeviceNotifierLinux::udevEvent(int fd)
         udev_device_unref(dev);
         return;
     }
+    QString action = QString(udev_device_get_action(dev));
+    QString devpath_usb = QString(udev_device_get_devpath(parent));
+    if(action == "add" && var1.value(devpath_usb)) {
+        qDebug() << "ignoring already-added device";
+        return;
+    } else if(action == "remove" && !var1.value(devpath_usb)) {
+        qDebug() << "ignoring already-removed device";
+        return;
+    }
 
     QString vid = QString(udev_device_get_sysattr_value(parent, "idVendor"));
     if (vid != "1532") {
@@ -72,15 +81,18 @@ void DeviceNotifierLinux::udevEvent(int fd)
     QString pid = QString(udev_device_get_sysattr_value(parent, "idProduct"));
 
     QString sysname = QString(udev_device_get_sysname(dev)); // aka DEVNAME
+    QString devname = "/dev/" + sysname;
 
-    QString action = QString(udev_device_get_action(dev));
-    qDebug() << "Action:" << action << "- VID:" << vid << "- PID:" << pid << "- SYSNAME:" << sysname;;
-    if (action == "add")
+    qDebug() << "Action:" << action << "- VID:" << vid << "- PID:" << pid << "- DEVNAME:" << devname;;
+    if (action == "add") {
+        var1.insert(devpath_usb, true);
         emit deviceAdded();
-    else if (action == "remove")
+    } else if (action == "remove") {
+        var1.insert(devpath_usb, false);
         emit deviceRemoved();
-    else
+    } else {
         qDebug() << "Action" << action << "ignored.";
+    }
 
     udev_device_unref(dev);
 }
