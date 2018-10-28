@@ -54,7 +54,6 @@ void DeviceNotifierLinux::udevEvent(int fd)
 
     struct udev_device *dev = udev_monitor_receive_device(mon);
 
-    // TODO Get parent (USB) device
     struct udev_device *parent = udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
     if (parent == NULL) {
         qDebug() << "Unable to get parent device.";
@@ -80,16 +79,15 @@ void DeviceNotifierLinux::udevEvent(int fd)
 
     QString pid = QString(udev_device_get_sysattr_value(parent, "idProduct"));
 
-    QString sysname = QString(udev_device_get_sysname(dev)); // aka DEVNAME
+    QString sysname = QString(udev_device_get_sysname(dev));
     QString devname = "/dev/" + sysname;
 
-    qDebug() << "Action:" << action << "- VID:" << vid << "- PID:" << pid << "- DEVNAME:" << devname;;
     if (action == "add") {
         var1.insert(devpath_usb, true);
-        emit deviceAdded();
+        emit deviceAdded(vid, pid, devname);
     } else if (action == "remove") {
         var1.insert(devpath_usb, false);
-        emit deviceRemoved();
+        emit deviceRemoved(vid, pid, devname);
     } else {
         qDebug() << "Action" << action << "ignored.";
     }

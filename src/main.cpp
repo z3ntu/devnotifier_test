@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QDebug>
 
 #include "idevicenotifier.h"
 
@@ -14,8 +15,8 @@ class MainClass : public QObject
 public:
     MainClass();
 public slots:
-    void deviceAdded();
-    void deviceRemoved();
+    void deviceAdded(QString vid, QString pid, QString path);
+    void deviceRemoved(QString vid, QString pid, QString path);
 private:
     IDeviceNotifier *notifier = nullptr;
 };
@@ -34,12 +35,14 @@ MainClass::MainClass()
     connect(notifier, &IDeviceNotifier::deviceRemoved, this, &MainClass::deviceRemoved);
 }
 
-void MainClass::deviceAdded()
+void MainClass::deviceAdded(QString vid, QString pid, QString path)
 {
+    qDebug() << "Action:" << "add" << "- VID:" << vid << "- PID:" << pid << "- PATH:" << path;
 }
 
-void MainClass::deviceRemoved()
+void MainClass::deviceRemoved(QString vid, QString pid, QString path)
 {
+    qDebug() << "Action:" << "remove" << "- VID:" << vid << "- PID:" << pid << "- PATH:" << path;
 }
 
 int main(int argc, char *argv[])
