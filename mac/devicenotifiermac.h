@@ -24,17 +24,11 @@
 /**
  * @todo write docs
  */
-class DeviceNotifierMac : public IDeviceNotifier
+class DeviceNotifier : public IDeviceNotifier
 {
 public:
-    virtual ~DeviceNotifierMac() override;
+    virtual ~DeviceNotifier() override;
     virtual bool setup() override;
-private:
-//    struct udev *udev = NULL;
-//    struct udev_monitor *mon = NULL;
-
-private slots:
-//    void udevEvent(int fd);
 };
 
 #endif // DEVICENOTIFIERMAC_H

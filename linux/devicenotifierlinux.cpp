@@ -23,13 +23,13 @@
 #include <QDebug>
 #include <QSocketNotifier>
 
-DeviceNotifierLinux::~DeviceNotifierLinux()
+DeviceNotifier::~DeviceNotifier()
 {
     udev_unref(udev);
     udev_monitor_unref(mon);
 }
 
-bool DeviceNotifierLinux::setup()
+bool DeviceNotifier::setup()
 {
     udev = udev_new();
     if (!udev) {
@@ -38,56 +38,31 @@ bool DeviceNotifierLinux::setup()
     }
 
     mon = udev_monitor_new_from_netlink(udev, "udev");
-    // TODO: Maybe monitor "input" instead of "hidraw"? bentiss uses input
-    udev_monitor_filter_add_match_subsystem_devtype(mon, "hidraw", NULL);
+    udev_monitor_filter_add_match_tag(mon, "razer_test");
+    udev_monitor_filter_add_match_subsystem_devtype(mon, "usb", "usb_device");
     udev_monitor_enable_receiving(mon);
 
     QSocketNotifier *sn = new QSocketNotifier(udev_monitor_get_fd(mon), QSocketNotifier::Read, this);
-    connect(sn, &QSocketNotifier::activated, this, &DeviceNotifierLinux::udevEvent);
+    connect(sn, &QSocketNotifier::activated, this, &DeviceNotifier::udevEvent);
     return true;
 }
 
-void DeviceNotifierLinux::udevEvent(int fd)
+void DeviceNotifier::udevEvent(int fd)
 {
     if (fd != udev_monitor_get_fd(mon))
         return;
 
     struct udev_device *dev = udev_monitor_receive_device(mon);
 
-    struct udev_device *parent = udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_device");
-    if (parent == NULL) {
-        qDebug() << "Unable to get parent device.";
-        udev_device_unref(dev);
-        return;
-    }
     QString action = QString(udev_device_get_action(dev));
-    QString devpath_usb = QString(udev_device_get_devpath(parent));
-    if(action == "add" && var1.value(devpath_usb)) {
-        qDebug() << "ignoring already-added device";
-        return;
-    } else if(action == "remove" && !var1.value(devpath_usb)) {
-        qDebug() << "ignoring already-removed device";
-        return;
-    }
 
-    QString vid = QString(udev_device_get_sysattr_value(parent, "idVendor"));
-    if (vid != "1532") {
-        qDebug() << "Ignoring device with vid" << vid;
-        udev_device_unref(dev);
-        return;
-    }
+    QString vid = QString(udev_device_get_sysattr_value(dev, "idVendor"));
+    QString pid = QString(udev_device_get_sysattr_value(dev, "idProduct"));
+    qDebug() << "vid:" << vid << "pid:" << pid;
 
-    QString pid = QString(udev_device_get_sysattr_value(parent, "idProduct"));
-
-    QString sysname = QString(udev_device_get_sysname(dev));
-    QString devname = "/dev/" + sysname;
-
-    if (action == "add") {
-        var1.insert(devpath_usb, true);
-        emit deviceAdded(vid, pid, devname);
-    } else if (action == "remove") {
-        var1.insert(devpath_usb, false);
-        emit deviceRemoved(vid, pid, devname);
+    qDebug() << "Action:" << action;
+    if (action == "add" || action == "remove") {
+        emit triggerRediscover();
     } else {
         qDebug() << "Action" << action << "ignored.";
     }

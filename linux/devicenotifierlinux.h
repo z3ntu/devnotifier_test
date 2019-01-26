@@ -28,17 +28,15 @@
 /**
  * @todo write docs
  */
-class DeviceNotifierLinux : public IDeviceNotifier
+class DeviceNotifier : public IDeviceNotifier
 {
 public:
-    virtual ~DeviceNotifierLinux() override;
+    virtual ~DeviceNotifier() override;
     virtual bool setup() override;
 
 private:
     struct udev *udev = NULL;
     struct udev_monitor *mon = NULL;
-
-    QHash<QString, bool> var1;
 
 private slots:
     void udevEvent(int fd);

@@ -29,7 +29,7 @@
 #include <QDebug>
 #include <QSocketNotifier>
 
-DeviceNotifierMac::~DeviceNotifierMac()
+DeviceNotifier::~DeviceNotifier()
 {
 
 }
@@ -43,7 +43,7 @@ void deviceConnectedCallback(void *refCon, io_iterator_t iterator)
     qDebug() << "deviceConnectedCallback() called";
     kern_return_t kr;
     io_service_t usbDevice;
-    (void) refCon; // TODO What does this do??
+    (void) refCon;
 
     while((usbDevice = IOIteratorNext(iterator))) {
         io_name_t deviceName;
@@ -108,7 +108,7 @@ void deviceDisconnectedCallback(void *refCon, io_iterator_t iterator)
     }
 }
 
-bool DeviceNotifierMac::setup()
+bool DeviceNotifier::setup()
 {
     qDebug() << "setup() called";
     CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);

@@ -15,34 +15,21 @@ class MainClass : public QObject
 public:
     MainClass();
 public slots:
-    void deviceAdded(QString vid, QString pid, QString path);
-    void deviceRemoved(QString vid, QString pid, QString path);
+    void triggerRediscover();
 private:
     IDeviceNotifier *notifier = nullptr;
 };
 
 MainClass::MainClass()
 {
-#ifdef Q_OS_LINUX
-    notifier = new DeviceNotifierLinux();
-#elif defined(Q_OS_DARWIN)
-    notifier = new DeviceNotifierMac();
-#else
-    #error "Missing DeviceNotifier implementation for OS."
-#endif
+    notifier = new DeviceNotifier();
     notifier->setup();
-    connect(notifier, &IDeviceNotifier::deviceAdded, this, &MainClass::deviceAdded);
-    connect(notifier, &IDeviceNotifier::deviceRemoved, this, &MainClass::deviceRemoved);
+    connect(notifier, &IDeviceNotifier::triggerRediscover, this, &MainClass::triggerRediscover);
 }
 
-void MainClass::deviceAdded(QString vid, QString pid, QString path)
+void MainClass::triggerRediscover()
 {
-    qDebug() << "Action:" << "add" << "- VID:" << vid << "- PID:" << pid << "- PATH:" << path;
-}
-
-void MainClass::deviceRemoved(QString vid, QString pid, QString path)
-{
-    qDebug() << "Action:" << "remove" << "- VID:" << vid << "- PID:" << pid << "- PATH:" << path;
+    qDebug() << "TRIGGER REDISCOVER";
 }
 
 int main(int argc, char *argv[])
