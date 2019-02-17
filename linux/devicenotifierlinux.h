@@ -38,6 +38,10 @@ private:
     struct udev *udev = NULL;
     struct udev_monitor *mon = NULL;
 
+    void enumerateExistingDevices();
+
+    QHash<QString, QString> activeDevices;
+
 private slots:
     void udevEvent(int fd);
 };

@@ -37,8 +37,9 @@ bool DeviceNotifier::setup()
         return false;
     }
 
+    enumerateExistingDevices();
+
     mon = udev_monitor_new_from_netlink(udev, "udev");
-    udev_monitor_filter_add_match_tag(mon, "razer_test");
     udev_monitor_filter_add_match_subsystem_devtype(mon, "usb", "usb_device");
     udev_monitor_enable_receiving(mon);
 
@@ -49,23 +50,65 @@ bool DeviceNotifier::setup()
 
 void DeviceNotifier::udevEvent(int fd)
 {
+    struct udev_device *dev;
+
     if (fd != udev_monitor_get_fd(mon))
         return;
 
-    struct udev_device *dev = udev_monitor_receive_device(mon);
+    dev = udev_monitor_receive_device(mon);
 
     QString action = QString(udev_device_get_action(dev));
+    if (action != "add" && action != "remove") {
+        udev_device_unref(dev);
+        return;
+    }
 
+    QString path = QString(udev_device_get_devpath(dev));
     QString vid = QString(udev_device_get_sysattr_value(dev, "idVendor"));
-    QString pid = QString(udev_device_get_sysattr_value(dev, "idProduct"));
-    qDebug() << "vid:" << vid << "pid:" << pid;
 
-    qDebug() << "Action:" << action;
-    if (action == "add" || action == "remove") {
+    // Insert to the list, when the device is added and the VID is 1532
+    // Look up, when the VID is unknown (= empty)
+    if (action == "add" && vid == "1532") {
+        activeDevices.insert(path, vid);
+    } else if (vid == "") {
+        vid = activeDevices.value(path);
+    }
+
+    if (vid == "1532") {
         emit triggerRediscover();
-    } else {
-        qDebug() << "Action" << action << "ignored.";
     }
 
     udev_device_unref(dev);
+}
+
+// Enumerates already-connected Razer devices and adds them to the activeDevices hash to be used in udevEvent()
+void DeviceNotifier::enumerateExistingDevices()
+{
+    struct udev_enumerate *enumerate;
+    struct udev_list_entry *devices, *dev_list_entry;
+    struct udev_device *dev;
+
+    enumerate = udev_enumerate_new(udev);
+    udev_enumerate_add_match_subsystem(enumerate, "usb");
+    udev_enumerate_scan_devices(enumerate);
+    devices = udev_enumerate_get_list_entry(enumerate);
+    udev_list_entry_foreach(dev_list_entry, devices) {
+        dev = udev_device_new_from_syspath(udev, udev_list_entry_get_name(dev_list_entry));
+
+        QString devtype = QString(udev_device_get_devtype(dev));
+        if (devtype != "usb_device") {
+            udev_device_unref(dev);
+            continue;
+        }
+
+        QString path = QString(udev_device_get_devpath(dev));
+        QString vid = QString(udev_device_get_sysattr_value(dev, "idVendor"));
+
+        // Insert to the list when the VID is 1532
+        if (vid == "1532") {
+            activeDevices.insert(path, vid);
+        }
+
+        udev_device_unref(dev);
+    }
 }
