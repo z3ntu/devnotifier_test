@@ -111,4 +111,6 @@ void DeviceNotifier::enumerateExistingDevices()
 
         udev_device_unref(dev);
     }
+
+    udev_enumerate_unref(enumerate);
 }
