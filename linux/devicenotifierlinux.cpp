@@ -43,7 +43,7 @@ bool DeviceNotifier::setup()
     udev_monitor_filter_add_match_subsystem_devtype(mon, "usb", "usb_device");
     udev_monitor_enable_receiving(mon);
 
-    QSocketNotifier *sn = new QSocketNotifier(udev_monitor_get_fd(mon), QSocketNotifier::Read, this);
+    auto *sn = new QSocketNotifier(udev_monitor_get_fd(mon), QSocketNotifier::Read, this);
     connect(sn, &QSocketNotifier::activated, this, &DeviceNotifier::udevEvent);
     return true;
 }

@@ -31,12 +31,12 @@
 class DeviceNotifier : public IDeviceNotifier
 {
 public:
-    virtual ~DeviceNotifier() override;
-    virtual bool setup() override;
+    ~DeviceNotifier() override;
+    bool setup() override;
 
 private:
-    struct udev *udev = NULL;
-    struct udev_monitor *mon = NULL;
+    struct udev *udev = nullptr;
+    struct udev_monitor *mon = nullptr;
 
     void enumerateExistingDevices();
 

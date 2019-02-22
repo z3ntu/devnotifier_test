@@ -28,7 +28,7 @@ class IDeviceNotifier : public QObject
 {
     Q_OBJECT
 public:
-    virtual ~IDeviceNotifier() {}
+    ~IDeviceNotifier() override = default;
     virtual bool setup() = 0;
 signals:
     void triggerRediscover();
