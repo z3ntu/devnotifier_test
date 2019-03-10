@@ -23,6 +23,8 @@
 
 #include <IOKit/IOTypes.h>
 
+#include <QHash>
+
 /**
  * @todo write docs
  */
@@ -36,9 +38,11 @@ private:
     static void deviceConnectedCallback(void *refCon, io_iterator_t iterator);
     static void deviceDisconnectedCallback(void *refCon, io_iterator_t iterator);
 
-    bool active = false;
     io_iterator_t gAddedIter;
     io_iterator_t gRemovedIter;
+
+    QHash<uint64_t, UInt16> activeDevices;
+    bool active = false;
 };
 
 #endif // DEVICENOTIFIERMAC_H

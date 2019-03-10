@@ -18,16 +18,10 @@
 
 #include "devicenotifiermac.h"
 
-// TODO Which headers are actually needed?
-#include <CoreFoundation/CoreFoundation.h>
-
-#include <IOKit/IOKitLib.h>
-#include <IOKit/IOMessage.h>
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/usb/IOUSBLib.h>
 
 #include <QDebug>
-#include <QSocketNotifier>
 
 DeviceNotifier::~DeviceNotifier()
 {
@@ -36,20 +30,20 @@ DeviceNotifier::~DeviceNotifier()
 
 void DeviceNotifier::deviceConnectedCallback(void *refCon, io_iterator_t iterator)
 {
-    qDebug() << "deviceConnectedCallback() called";
     DeviceNotifier *notif = static_cast<DeviceNotifier*>(refCon);
     kern_return_t kr;
     io_service_t usbDevice;
 
     while ((usbDevice = IOIteratorNext(iterator))) {
-        io_name_t deviceName;
-        QString name;
+        // Get the unique ID for the device
+        uint64_t entryID;
+        kr = IORegistryEntryGetRegistryEntryID(usbDevice, &entryID);
+        if (kr != KERN_SUCCESS) {
+            qDebug() << "Error calling IORegistryEntryGetRegistryEntryID. kr:" << kr;
+            return;
+        }
 
-        kr = IORegistryEntryGetName(usbDevice, deviceName);
-        if (kr == KERN_SUCCESS)
-            name = QString::fromLocal8Bit(deviceName);
-        qDebug() << "device" << name << "in deviceConnectedCallback";
-
+        // Get the VID for the device
         IOCFPlugInInterface **plugInInterface;
         SInt32 score;
         kr = IOCreatePlugInInterfaceForService(usbDevice, kIOUSBDeviceUserClientTypeID, kIOCFPlugInInterfaceID, &plugInInterface, &score);
@@ -71,11 +65,15 @@ void DeviceNotifier::deviceConnectedCallback(void *refCon, io_iterator_t iterato
         UInt16 vid;
         kr = (*deviceInterface)->GetDeviceVendor(deviceInterface, &vid);
         assert(kr == kIOReturnSuccess);
-        QString vidStr = QString::number(vid, 16).rightJustified(4, '0');
-        qDebug() << "vid:" << vidStr;
 
-        if(vidStr == "1532" && notif->active) {
-            emit notif->triggerRediscover();
+        // DEC 5426 = HEX 1532
+        // Check if it's a Razer device, if so, insert the data into the hash
+        // And if we're supposed to emit the signal, emit it
+        if (vid == 5426) {
+            notif->activeDevices.insert(entryID, vid);
+            if(notif->active) {
+                emit notif->triggerRediscover();
+            }
         }
 
         kr = IOObjectRelease(usbDevice);
@@ -84,20 +82,27 @@ void DeviceNotifier::deviceConnectedCallback(void *refCon, io_iterator_t iterato
 
 void DeviceNotifier::deviceDisconnectedCallback(void *refCon, io_iterator_t iterator)
 {
-    qDebug() << "deviceDisconnectedCallback() called";
     DeviceNotifier *notif = static_cast<DeviceNotifier*>(refCon);
     kern_return_t kr;
     io_service_t usbDevice;
 
     while ((usbDevice = IOIteratorNext(iterator))) {
-        // TODO
-        io_name_t deviceName;
+        // Get the unique ID for the device
+        uint64_t entryID;
+        kr = IORegistryEntryGetRegistryEntryID(usbDevice, &entryID);
+        if (kr != KERN_SUCCESS) {
+            qDebug() << "Error calling IORegistryEntryGetRegistryEntryID. kr:" << kr;
+            return;
+        }
 
-        kr = IORegistryEntryGetName(usbDevice, deviceName);
-        QString name;
-        if (kr == KERN_SUCCESS)
-            name = QString::fromLocal8Bit(deviceName);
-        qDebug() << "device" << name << "in deviceDisconnectedCallback";
+        // Look up VID for the ID
+        UInt16 vid = notif->activeDevices.value(entryID);
+        // Check if it's a Razer device, if so, emit the signal
+        if(vid == 5426) {
+            emit notif->triggerRediscover();
+        }
+        // Remove value from hash as we've used it already
+        notif->activeDevices.remove(entryID);
 
         kr = IOObjectRelease(usbDevice);
     }
@@ -105,15 +110,7 @@ void DeviceNotifier::deviceDisconnectedCallback(void *refCon, io_iterator_t iter
 
 bool DeviceNotifier::setup()
 {
-    qDebug() << "setup() called";
     CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);
-
-    /*  Filtering here doesn't work.
-        UInt32 vendorId = 0x1532;
-        CFNumberRef cfVendorValue = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &vendorId);
-        CFDictionaryAddValue(matchingDict, CFSTR(kUSBVendorID), cfVendorValue);
-        CFRelease(cfVendorValue);
-    */
 
     IONotificationPortRef notificationPort = IONotificationPortCreate(kIOMasterPortDefault);
     CFRunLoopSourceRef runLoopSource = IONotificationPortGetRunLoopSource(notificationPort);
@@ -142,6 +139,8 @@ bool DeviceNotifier::setup()
     deviceConnectedCallback(this, gAddedIter);
     deviceDisconnectedCallback(this, gRemovedIter);
 
+    // Tell the functions to emit the signal.
+    // This is neccessary because we have to call the callbacks and we don't want the signals to be emitted yet.
     active = true;
 
     return true;
