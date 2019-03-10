@@ -24,13 +24,11 @@
 #include <QDebug>
 
 DeviceNotifier::~DeviceNotifier()
-{
-
-}
+= default;
 
 void DeviceNotifier::deviceConnectedCallback(void *refCon, io_iterator_t iterator)
 {
-    DeviceNotifier *notif = static_cast<DeviceNotifier*>(refCon);
+    auto *notif = static_cast<DeviceNotifier*>(refCon);
     kern_return_t kr;
     io_service_t usbDevice;
 
@@ -82,7 +80,7 @@ void DeviceNotifier::deviceConnectedCallback(void *refCon, io_iterator_t iterato
 
 void DeviceNotifier::deviceDisconnectedCallback(void *refCon, io_iterator_t iterator)
 {
-    DeviceNotifier *notif = static_cast<DeviceNotifier*>(refCon);
+    auto *notif = static_cast<DeviceNotifier*>(refCon);
     kern_return_t kr;
     io_service_t usbDevice;
 

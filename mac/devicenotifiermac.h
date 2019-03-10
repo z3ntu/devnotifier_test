@@ -31,8 +31,8 @@
 class DeviceNotifier : public IDeviceNotifier
 {
 public:
-    virtual ~DeviceNotifier() override;
-    virtual bool setup() override;
+    ~DeviceNotifier() override;
+    bool setup() override;
 
 private:
     static void deviceConnectedCallback(void *refCon, io_iterator_t iterator);
