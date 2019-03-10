@@ -29,7 +29,7 @@ MainClass::MainClass()
 
 void MainClass::triggerRediscover()
 {
-    qDebug() << "TRIGGER REDISCOVER";
+    qDebug() << "TRIGGER REDISCOVER FROM MAINCLASS";
 }
 
 int main(int argc, char *argv[])

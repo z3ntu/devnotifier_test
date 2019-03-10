@@ -34,16 +34,12 @@ DeviceNotifier::~DeviceNotifier()
 
 }
 
-// TODO Put in header file?
-io_iterator_t gAddedIter;
-io_iterator_t gRemovedIter;
-
-void deviceConnectedCallback(void *refCon, io_iterator_t iterator)
+void DeviceNotifier::deviceConnectedCallback(void *refCon, io_iterator_t iterator)
 {
     qDebug() << "deviceConnectedCallback() called";
+    DeviceNotifier *notif = static_cast<DeviceNotifier*>(refCon);
     kern_return_t kr;
     io_service_t usbDevice;
-    (void) refCon;
 
     while ((usbDevice = IOIteratorNext(iterator))) {
         io_name_t deviceName;
@@ -72,27 +68,26 @@ void deviceConnectedCallback(void *refCon, io_iterator_t iterator)
             return;
         }
 
-        UInt16 vid, pid;
+        UInt16 vid;
         kr = (*deviceInterface)->GetDeviceVendor(deviceInterface, &vid);
         assert(kr == kIOReturnSuccess);
-        kr = (*deviceInterface)->GetDeviceProduct(deviceInterface, &pid);
-        assert(kr == kIOReturnSuccess);
-        qDebug() << "vid:" << QString::number(vid, 16).rightJustified(4, '0')  << "pid:" << QString::number(pid, 16).rightJustified(4, '0');
-        USBDeviceAddress addr;
-        kr = (*deviceInterface)->GetDeviceAddress(deviceInterface, &addr);
-        qDebug() << "device address:" << addr;
+        QString vidStr = QString::number(vid, 16).rightJustified(4, '0');
+        qDebug() << "vid:" << vidStr;
 
+        if(vidStr == "1532" && notif->active) {
+            emit notif->triggerRediscover();
+        }
 
         kr = IOObjectRelease(usbDevice);
     }
 }
 
-void deviceDisconnectedCallback(void *refCon, io_iterator_t iterator)
+void DeviceNotifier::deviceDisconnectedCallback(void *refCon, io_iterator_t iterator)
 {
     qDebug() << "deviceDisconnectedCallback() called";
+    DeviceNotifier *notif = static_cast<DeviceNotifier*>(refCon);
     kern_return_t kr;
     io_service_t usbDevice;
-    (void) refCon;
 
     while ((usbDevice = IOIteratorNext(iterator))) {
         // TODO
@@ -133,19 +128,21 @@ bool DeviceNotifier::setup()
                                           kIOMatchedNotification,
                                           matchingDict,
                                           deviceConnectedCallback,
-                                          NULL,
+                                          this,
                                           &gAddedIter);
 
     kr = IOServiceAddMatchingNotification(notificationPort,
                                           kIOTerminatedNotification,
                                           matchingDict,
                                           deviceDisconnectedCallback,
-                                          NULL,
+                                          this,
                                           &gRemovedIter);
 
     // Iterate once to get already-present devices and arm the notification
-    deviceConnectedCallback(NULL, gAddedIter);
-    deviceDisconnectedCallback(NULL, gRemovedIter);
+    deviceConnectedCallback(this, gAddedIter);
+    deviceDisconnectedCallback(this, gRemovedIter);
+
+    active = true;
 
     return true;
 }

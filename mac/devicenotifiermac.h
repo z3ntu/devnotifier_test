@@ -21,6 +21,8 @@
 
 #include "../src/idevicenotifier.h"
 
+#include <IOKit/IOTypes.h>
+
 /**
  * @todo write docs
  */
@@ -29,6 +31,14 @@ class DeviceNotifier : public IDeviceNotifier
 public:
     virtual ~DeviceNotifier() override;
     virtual bool setup() override;
+
+private:
+    static void deviceConnectedCallback(void *refCon, io_iterator_t iterator);
+    static void deviceDisconnectedCallback(void *refCon, io_iterator_t iterator);
+
+    bool active = false;
+    io_iterator_t gAddedIter;
+    io_iterator_t gRemovedIter;
 };
 
 #endif // DEVICENOTIFIERMAC_H
